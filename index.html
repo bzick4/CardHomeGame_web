@@ -74,7 +74,19 @@
       }
       #loader .tip b { color: #ffd34d; }
     </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
+  <script>
+    window.Telegram.WebApp.ready();
+
+    // Разворачиваем окно приложения.
+    window.Telegram.WebApp.expand();
+
+    // Запрашиваем полноэкранный режим.
+    if (window.Telegram.WebApp.requestFullscreen) {
+        window.Telegram.WebApp.requestFullscreen();
+    }
+</script>
   <body>
     <canvas id="unity-canvas" tabindex="-1"></canvas>
 
