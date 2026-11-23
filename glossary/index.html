@@ -483,5 +483,210 @@ try {
 }
 
 </script>
+
+<script>
+(() => {
+    // =====================================
+    // GOOGLE ANALYTICS — CARDHOME GLOSSARY
+    // =====================================
+
+    const analyticsId = "G-1SRY5V5304";
+    const consentKey = "cardhome_analytics";
+
+    let analyticsEnabled = false;
+
+    // Запускаем Google Analytics.
+    function StartAnalytics() {
+        if (analyticsEnabled) return;
+
+        analyticsEnabled = true;
+
+        window.dataLayer = window.dataLayer || [];
+
+        window.gtag = function() {
+            window.dataLayer.push(arguments);
+        };
+
+        gtag("js", new Date());
+
+        gtag("config", analyticsId, {
+            send_page_view: true
+        });
+
+        const script = document.createElement("script");
+
+        script.async = true;
+        script.src =
+            "https://www.googletagmanager.com/gtag/js?id="
+            + analyticsId;
+
+        document.head.appendChild(script);
+    }
+
+    // Отправляем событие.
+    function TrackEvent(name, parameters = {}) {
+        if (!analyticsEnabled) return;
+
+        gtag("event", name, parameters);
+    }
+
+    // =====================================
+    // СОГЛАСИЕ НА АНАЛИТИКУ
+    // =====================================
+
+    function GetConsent() {
+        try {
+            return localStorage.getItem(consentKey);
+        } catch {
+            return null;
+        }
+    }
+
+    function SaveConsent(accepted) {
+        try {
+            localStorage.setItem(
+                consentKey,
+                accepted ? "yes" : "no"
+            );
+        } catch {}
+
+        if (accepted) {
+            StartAnalytics();
+        }
+    }
+
+    function ShowConsent() {
+        const panel = document.createElement("div");
+
+        panel.style.cssText = `
+            position:fixed;
+            left:0;
+            right:0;
+            bottom:0;
+            z-index:99999;
+            background:#302337;
+            border-top:1px solid #b9905b;
+            padding:20px;
+            padding-bottom:max(
+                20px,
+                env(safe-area-inset-bottom)
+            );
+            color:#f7e9d6;
+            font-family:Arial,sans-serif;
+            box-shadow:0 -8px 30px #0008;
+        `;
+
+        const message = document.createElement("p");
+        message.textContent =
+            "📊 Разрешить анонимную аналитику " +
+            "посещений и просмотров карточек?";
+        message.style.cssText =
+            "font-size:14px;line-height:1.5;margin:0 0 14px";
+
+        const buttons = document.createElement("div");
+        buttons.style.cssText = "display:flex;gap:10px";
+
+        const decline = document.createElement("button");
+        decline.textContent = "Не разрешать";
+
+        const accept = document.createElement("button");
+        accept.textContent = "Разрешить";
+
+        for (const button of [decline, accept]) {
+            button.style.cssText = `
+                flex:1;
+                padding:13px 8px;
+                border-radius:10px;
+                border:1px solid #b9905b;
+                font-weight:bold;
+                font-size:14px;
+            `;
+        }
+
+        decline.style.background = "#443349";
+        decline.style.color = "#f4d49d";
+
+        accept.style.background = "#e9bd70";
+        accept.style.color = "#291c23";
+
+        decline.addEventListener("click", () => {
+            SaveConsent(false);
+            panel.remove();
+        });
+
+        accept.addEventListener("click", () => {
+            SaveConsent(true);
+            panel.remove();
+        });
+
+        buttons.append(decline, accept);
+        panel.append(message, buttons);
+        document.body.appendChild(panel);
+    }
+
+    // Согласие общее с меню, потому что
+    // обе страницы на одном сайте.
+    const consent = GetConsent();
+
+    if (consent === "yes") {
+        StartAnalytics();
+    } else if (consent === null) {
+        ShowConsent();
+    }
+
+    // =====================================
+    // ОТСЛЕЖИВАНИЕ КНОПОК И КАРТОЧЕК
+    // =====================================
+
+    document.addEventListener("click", (event) => {
+        const target = event.target;
+
+        if (!(target instanceof Element)) return;
+
+        // Нажатие на вкладку комнат.
+        if (target.closest("#roomsButton")) {
+            TrackEvent("glossary_tab_open", {
+                tab_name: "rooms"
+            });
+            return;
+        }
+
+        // Нажатие на вкладку персонажей.
+        if (target.closest("#guestsButton")) {
+            TrackEvent("glossary_tab_open", {
+                tab_name: "characters"
+            });
+            return;
+        }
+
+        // Нажатие на изображение карточки.
+        const picture = target.closest(".picture");
+
+        if (!picture) return;
+
+        const card = picture.closest(".card");
+
+        if (!card) return;
+
+        // Получаем название карточки.
+        const name = card
+            .querySelector(".info h3")
+            ?.textContent.trim() || "unknown";
+
+        // Определяем текущую категорию.
+        const isRoom = document
+            .getElementById("roomsButton")
+            ?.classList.contains("active");
+
+        TrackEvent("glossary_card_open", {
+            card_name: name,
+            card_type: isRoom ? "room" : "character"
+        });
+    }, true);
+
+})();
+</script>
+
+
 </body>
 </html>
