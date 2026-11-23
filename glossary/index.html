@@ -1,140 +1,192 @@
 
-<!-- Компактные карточки -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CardHomeGame — Энциклопедия</title>
 <style>
-.entry {
-  display: grid !important;
-  grid-template-columns: 110px minmax(0, 1fr) !important;
-  min-height: 125px !important;
-  gap: 0 !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-}
-
-.entry-visual {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 125px !important;
-  padding: 7px !important;
-  cursor: zoom-in !important;
-}
-
-.entry-visual img {
-  width: 100% !important;
-  height: 125px !important;
-  max-height: 125px !important;
-  object-fit: contain !important;
-  pointer-events: none;
-}
-
-.entry-content {
-  min-width: 0 !important;
-  padding: 10px !important;
-  align-self: start !important;
-}
-
-.entry-title {
-  font-size: 17px !important;
-  margin: 0 0 6px !important;
-}
-
-.entry-description {
-  font-size: 12px !important;
-  line-height: 1.4 !important;
-}
-
-.catalog {
-  gap: 9px !important;
-}
-
-@media (max-width: 350px) {
-  .entry {
-    grid-template-columns: 95px minmax(0, 1fr) !important;
-  }
-}
-
-/* Полноэкранный просмотр */
-#cardZoom {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(10, 7, 15, 0.96);
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  padding: 55px 15px 25px;
-}
-
-#cardZoom.open {
-  display: flex;
-}
-
-#cardZoom img {
-  max-width: 100%;
-  max-height: 80dvh;
-  object-fit: contain;
-}
-
-#cardZoom button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: #49313b;
-  color: white;
-  border: 1px solid #d8ad70;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  font-size: 26px;
+*{box-sizing:border-box}
+body{margin:0;background:#19121d;color:#f7e9d6;font-family:Arial,sans-serif}
+main{max-width:720px;margin:auto;padding:18px 12px 35px}
+h1{text-align:center;color:#ffdda0;font-size:27px;margin:12px 0 18px}
+nav{display:flex;gap:8px;position:sticky;top:0;background:#19121d;padding:9px 0;z-index:2}
+nav button{flex:1;padding:12px 4px;border:1px solid #89684c;border-radius:10px;background:#382938;color:#f8e8ce;font-weight:bold;font-size:15px}
+nav button.active{background:#e9bd70;color:#2b1a20}
+h2{font-size:19px;color:#ffdda0;margin:16px 2px}
+.card{display:grid;grid-template-columns:105px minmax(0,1fr);margin-bottom:9px;border:1px solid #6c4d43;border-radius:12px;background:#302330;overflow:hidden}
+.picture{display:flex;align-items:center;justify-content:center;padding:7px;background:#49323a;border:0;border-right:1px solid #6c4d43;cursor:pointer;min-height:120px}
+.picture img{width:100%;height:118px;object-fit:contain;pointer-events:none}
+.info{padding:10px 11px;min-width:0}
+.info h3{font-size:16px;color:#ffe0a1;margin:0 0 6px}
+.info p{font-size:12px;line-height:1.45;margin:0;white-space:pre-line;overflow-wrap:anywhere}
+#zoom[hidden]{display:none}
+#zoom{position:fixed;inset:0;background:#100b12f5;z-index:10;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:55px 12px 22px}
+#zoom img{max-width:100%;max-height:78dvh;object-fit:contain}
+#zoomName{margin-top:12px;color:#ffe0a1;font-size:20px;text-align:center}
+#close{position:absolute;top:18px;right:18px;width:44px;height:44px;border-radius:50%;background:#46313e;color:white;border:1px solid #bd9862;font-size:26px}
+@media(min-width:600px){
+.card{grid-template-columns:160px minmax(0,1fr)}
+.picture img{height:160px}
+.info{padding:17px}
+.info h3{font-size:21px}
+.info p{font-size:14px}
 }
 </style>
+</head>
+<body>
+<main>
+<h1>📖 Энциклопедия CardHomeGame</h1>
+<nav>
+<button id="roomsButton" class="active" type="button">🏰 Комнаты</button>
+<button id="guestsButton" type="button">🎭 Персонажи</button>
+</nav>
+<h2 id="heading">Комнаты</h2>
+<div id="list"></div>
+</main>
+
+<div id="zoom" hidden>
+<button id="close" type="button" aria-label="Закрыть">×</button>
+<img id="zoomImage" alt="">
+<div id="zoomName"></div>
+</div>
 
 <script>
-(() => {
-  // Если просмотр уже есть, не создаём второй.
-  if (document.getElementById("lightbox")) return;
+// Формат: [файл картинки, название, описание]
+const rooms = [
+["Hall","Прихожая","Вход. Отсюда гости начинают обход."],
+["Corridor","Коридор","Ничего не даёт, но гость проходит его, не уставая."],
+["Crossroad","Перекрёсток","Коридор на 4 двери. Не тратит выносливость."],
+["Kitchen","Кухня","Путнику +2, учёному +1. Рядом столовая: ×2. Цель волка!"],
+["Dining","Столовая","+1 любому гостю."],
+["Bedroom","Спальня","Путнику +3, учёному +1. Рядом подвал: кошмары −3."],
+["Bath","Ванная","Путнику +2, учёному +1."],
+["Library","Библиотека","Учёному +3, призраку +1, путнику −1."],
+["Fireplace","Камин","Соседние комнаты тёплые: +1 (призраку −1)."],
+["Cellar","Подвал","Призраку +2. Соседним спальням снятся кошмары."],
+["Trap","Ловушка","Ловит вора и волка (+золото). Обычному гостю −3."],
+["Treasury","Сокровищница","+2 золота каждую ночь. Цель вора!"],
+["Nursery","Детская","Призраку +4, учёному −2."],
+["Lounge","Гостиная","+2 любому гостю. Бывает только в наградах."],
+["WineCellar","Винный погреб","+1 любому гостю. Гурману +3, пьянице +4 — но пьяный точно что-то сломает. Семье −2."]
+];
 
-  const zoom = document.createElement("div");
-  zoom.id = "cardZoom";
+const guests = [
+["Traveler","Путник","Хочет поесть и выспаться. Выносливость 4, нужно настроение 4."],
+["Scholar","Учёный","Ищет книги, не любит детей. Выносливость 5, нужно настроение 6."],
+["Ghost","Призрак","Бродит случайно, сквозь ловушки. Не любит тепло. Выносливость 4, нужно 3."],
+["Thief","Вор","Кратчайшим путём идёт к сокровищнице. Поймай ловушкой — +5 золота."],
+["Wolf","Волк","Кратчайшим путём бежит на кухню. Поймай ловушкой — +4 золота."],
+["Gourmet","Гурман","Живёт ради кухни и столовой, на сон ему всё равно. Выносливость 3, нужно настроение 7."],
+["Family","Семья","Ищут детскую и спальню, боятся подвала. Выносливость 5, нужно настроение 6."],
+["Vampire","Вампир","Кратчайшим путём крадётся в спальню. Дошёл — репутация −2. Поймай ловушкой — +6 золота."],
+["Inspector","Инспектор","Обходит всё подряд (+1 за комнату), но −1 за каждую дверь за край дома. Нужно 5."],
+["Couple","Влюблённые","Спальня +3, ванная +2, спальня рядом с ванной ещё +2. Платят вдвое. Нужно 6."],
+["Drunkard","Пьяница","Шатается куда попало, любит кухню и столовую. Может что-нибудь сломать. Нужно 2."],
+["Cat","Кошка","Бродит где хочет. Довольная остаётся жить в доме — крысы больше не сунутся. Выносливость 4, нужно 3."],
+["Rats","Крысы","Бегут в подвал: −2 золота, репутация −1. Ловушка поймает (+2), кошка в доме — не сунутся."],
+["Aristocrat","Аристократ","Замечает только улучшенные комнаты (ур. II и выше). Платит вдвое. Нужно 6."],
+["Arsonist","Поджигатель","Идёт к камину. Дошёл — пожар: горят камин и соседние комнаты, репутация −1. Ловушка: +5 золота."],
+["Witch","Ведьма","Любит подвал и книги. Довольна — платит вдвое. Недовольна — превращает последнюю комнату в подвал. Нужно 5."],
+["GhostLord","Хозяин дома","БОСС. Призрак-хозяин: сквозь ловушки, не любит тепло. Нужно 8. Недоволен — репутация −2."]
+];
 
-  zoom.innerHTML = `
-    <button type="button" aria-label="Закрыть">×</button>
-    <img alt="Изображение карты">
-  `;
+// Изображения загружаются из исходного GitHub-репозитория.
+const base = "https://raw.githubusercontent.com/bzick4/CardHomeGame/main/Assets/Resources/Art/";
 
-  document.body.appendChild(zoom);
+const list = document.getElementById("list");
+const heading = document.getElementById("heading");
+const roomsButton = document.getElementById("roomsButton");
+const guestsButton = document.getElementById("guestsButton");
+const zoom = document.getElementById("zoom");
+const zoomImage = document.getElementById("zoomImage");
+const zoomName = document.getElementById("zoomName");
+const sortRu = new Intl.Collator("ru");
 
-  const bigImage = zoom.querySelector("img");
+// Открываем картинку на весь экран.
+function showImage(url, name) {
+  zoomImage.src = url;
+  zoomImage.alt = name;
+  zoomName.textContent = name;
+  zoom.hidden = false;
+  document.body.style.overflow = "hidden";
+}
 
-  function closeZoom() {
-    zoom.classList.remove("open");
-    bigImage.removeAttribute("src");
-    document.body.style.overflow = "";
+// Закрываем увеличенную картинку.
+function closeImage() {
+  zoom.hidden = true;
+  zoomImage.removeAttribute("src");
+  document.body.style.overflow = "";
+}
+
+// Показываем выбранную категорию.
+function showCards(type) {
+  const isRoom = type === "rooms";
+
+  roomsButton.classList.toggle("active", isRoom);
+  guestsButton.classList.toggle("active", !isRoom);
+  heading.textContent = isRoom ? "Комнаты" : "Персонажи";
+  list.replaceChildren();
+
+  const folder = isRoom ? "RoomArt/" : "Cards/";
+  const data = [...(isRoom ? rooms : guests)]
+    .sort((a, b) => sortRu.compare(a[1], b[1]));
+
+  for (const [id, name, description] of data) {
+    const url = base + folder + id + ".png";
+
+    const card = document.createElement("article");
+    card.className = "card";
+
+    const picture = document.createElement("button");
+    picture.className = "picture";
+    picture.type = "button";
+    picture.setAttribute("aria-label", "Увеличить: " + name);
+
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = name;
+    img.loading = "lazy";
+
+    picture.append(img);
+    picture.addEventListener("click", () => showImage(url, name));
+
+    const info = document.createElement("div");
+    info.className = "info";
+
+    const title = document.createElement("h3");
+    title.textContent = name;
+
+    const text = document.createElement("p");
+    text.textContent = description;
+
+    info.append(title, text);
+    card.append(picture, info);
+    list.append(card);
   }
+}
 
-  // Нажатие на маленькую картинку.
-  document.addEventListener("click", (event) => {
-    const card = event.target.closest(".entry-visual");
-    if (!card) return;
+// Переключение между комнатами и персонажами.
+roomsButton.addEventListener("click", () => showCards("rooms"));
+guestsButton.addEventListener("click", () => showCards("guests"));
 
-    const image = card.querySelector("img");
-    if (!image) return;
+// Закрытие большой картинки.
+document.getElementById("close").addEventListener("click", closeImage);
+zoom.addEventListener("click", e => {
+  if (e.target === zoom) closeImage();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeImage();
+});
 
-    bigImage.src = image.src;
-    bigImage.alt = image.alt;
+// При запуске показываем комнаты.
+showCards("rooms");
 
-    zoom.classList.add("open");
-    document.body.style.overflow = "hidden";
-  });
-
-  // Закрытие увеличенной картинки.
-  zoom.querySelector("button").onclick = closeZoom;
-
-  zoom.addEventListener("click", (event) => {
-    if (event.target === zoom) closeZoom();
-  });
-})();
+// Сообщаем Telegram, что приложение готово.
+try {
+  window.Telegram?.WebApp?.ready();
+  window.Telegram?.WebApp?.expand();
+} catch(e) {}
 </script>
+</body>
+</html>
