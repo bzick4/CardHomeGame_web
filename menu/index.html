@@ -13,7 +13,7 @@
 
     <title>CardHomeGame — Меню</title>
 
-    <!-- Telegram Mini Apps SDK -->
+    <!-- Telegram Mini Apps -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
@@ -123,7 +123,7 @@
             border-color: #9875a4;
         }
 
-        .icon {
+        .menu-icon {
             width: 64px;
             height: 64px;
             flex-shrink: 0;
@@ -164,6 +164,68 @@
             color: #9f8b9f;
             font-size: 12px;
             margin-top: 10px;
+        }
+
+        /* Согласие на аналитику */
+
+        .consent {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+
+            padding: 18px;
+            padding-bottom: max(
+                18px,
+                env(safe-area-inset-bottom)
+            );
+
+            background: #302337;
+            border-top: 1px solid #b9905b;
+            box-shadow: 0 -8px 30px #0008;
+        }
+
+        .consent[hidden] {
+            display: none;
+        }
+
+        .consent-inner {
+            max-width: 520px;
+            margin: auto;
+        }
+
+        .consent p {
+            margin: 0 0 14px;
+            color: #e8d8e2;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .consent-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .consent-buttons button {
+            flex: 1;
+            padding: 13px 8px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .accept {
+            background: #e9bd70;
+            color: #291c23;
+            border: none;
+        }
+
+        .decline {
+            background: #443349;
+            color: #f4d49d;
+            border: 1px solid #8c7187;
         }
 
         @media (max-height: 570px) {
@@ -211,7 +273,7 @@
                 type="button"
                 onclick="OpenGame()">
 
-                <div class="icon">🎮</div>
+                <div class="menu-icon">🎮</div>
 
                 <div class="content">
                     <div class="name">Играть</div>
@@ -231,7 +293,7 @@
                 type="button"
                 onclick="OpenGlossary()">
 
-                <div class="icon">📖</div>
+                <div class="menu-icon">📖</div>
 
                 <div class="content">
                     <div class="name">Глоссарий</div>
@@ -253,19 +315,55 @@
 
     </div>
 
-    <script>
-        // Telegram Mini Apps SDK
-        const telegram = window.Telegram?.WebApp;
+    <!-- Окно согласия -->
+    <section class="consent" id="consent" hidden>
+        <div class="consent-inner">
 
-        // Ссылка на главное Mini App.
+            <p>
+                📊 Помоги нам улучшить CardHomeGame!
+                Мы используем Google Analytics,
+                чтобы считать посещения и нажатия
+                кнопок. Личные данные для
+                аналитики не запрашиваем.
+            </p>
+
+            <div class="consent-buttons">
+
+                <button
+                    class="decline"
+                    onclick="SaveConsent(false)">
+                    Не разрешать
+                </button>
+
+                <button
+                    class="accept"
+                    onclick="SaveConsent(true)">
+                    Разрешить
+                </button>
+
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // ============================
+        // НАСТРОЙКИ
+        // ============================
+
+        const analyticsId = "G-1SRY5V5304";
+
         const gameUrl =
             "https://t.me/cardhomegamebot?startapp";
 
-        // Ссылка на энциклопедию.
         const glossaryUrl =
             "https://bzick4.github.io/CardHomeGame_web/glossary/";
 
-        // Настройка окна Telegram.
+        const telegram = window.Telegram?.WebApp;
+
+        // ============================
+        // TELEGRAM
+        // ============================
+
         if (telegram) {
             telegram.ready();
             telegram.expand();
@@ -274,24 +372,127 @@
             telegram.setBackgroundColor("#1c1522");
         }
 
-        // Открытие главной игры.
+        // ============================
+        // GOOGLE ANALYTICS
+        // ============================
+
+        let analyticsEnabled = false;
+
+        // Запускаем аналитику только
+        // после согласия пользователя.
+        function StartAnalytics() {
+
+            if (analyticsEnabled) {
+                return;
+            }
+
+            analyticsEnabled = true;
+
+            window.dataLayer = window.dataLayer || [];
+
+            window.gtag = function() {
+                dataLayer.push(arguments);
+            };
+
+            gtag("js", new Date());
+
+            gtag("config", analyticsId, {
+                anonymize_ip: true,
+                send_page_view: true
+            });
+
+            const script = document.createElement("script");
+
+            script.async = true;
+
+            script.src =
+                "https://www.googletagmanager.com/gtag/js?id="
+                + analyticsId;
+
+            document.head.appendChild(script);
+        }
+
+        // ============================
+        // СОГЛАСИЕ
+        // ============================
+
+        const consentPanel =
+            document.getElementById("consent");
+
+        const savedConsent =
+            localStorage.getItem("cardhome_analytics");
+
+        if (savedConsent === "yes") {
+            StartAnalytics();
+        }
+        else if (savedConsent !== "no") {
+            consentPanel.hidden = false;
+        }
+
+        function SaveConsent(accepted) {
+
+            localStorage.setItem(
+                "cardhome_analytics",
+                accepted ? "yes" : "no"
+            );
+
+            consentPanel.hidden = true;
+
+            if (accepted) {
+                StartAnalytics();
+            }
+        }
+
+        // ============================
+        // ОТПРАВКА СОБЫТИЙ
+        // ============================
+
+        function TrackEvent(eventName) {
+
+            if (!analyticsEnabled) {
+                return;
+            }
+
+            if (typeof window.gtag !== "function") {
+                return;
+            }
+
+            gtag("event", eventName, {
+                transport_type: "beacon"
+            });
+        }
+
+        // ============================
+        // КНОПКА ИГРАТЬ
+        // ============================
+
         function OpenGame() {
 
+            // Отслеживаем нажатие.
+            TrackEvent("menu_play_click");
+
+            // Открываем главное Mini App.
             if (telegram) {
-                // Запускаем Main App через Telegram.
                 telegram.openTelegramLink(gameUrl);
-            } else {
-                // Для обычного браузера.
+            }
+            else {
                 window.location.href = gameUrl;
             }
         }
 
-        // Открытие глоссария.
+        // ============================
+        // КНОПКА ГЛОССАРИЙ
+        // ============================
+
         function OpenGlossary() {
 
-            // Переходим внутри текущего окна.
+            // Отслеживаем нажатие.
+            TrackEvent("menu_glossary_click");
+
+            // Открываем энциклопедию.
             window.location.href = glossaryUrl;
         }
+
     </script>
 
 </body>
