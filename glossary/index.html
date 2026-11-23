@@ -1,14 +1,140 @@
 
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1">
-  <title>CardHomeGame — Энциклопедия</title>
-</head>
-<body>
-  <h1>📖 Энциклопедия CardHomeGame</h1>
-  <p>Здесь скоро появятся карты комнат и персонажей.</p>
-</body>
-</html>
+<!-- Компактные карточки -->
+<style>
+.entry {
+  display: grid !important;
+  grid-template-columns: 110px minmax(0, 1fr) !important;
+  min-height: 125px !important;
+  gap: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+.entry-visual {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 125px !important;
+  padding: 7px !important;
+  cursor: zoom-in !important;
+}
+
+.entry-visual img {
+  width: 100% !important;
+  height: 125px !important;
+  max-height: 125px !important;
+  object-fit: contain !important;
+  pointer-events: none;
+}
+
+.entry-content {
+  min-width: 0 !important;
+  padding: 10px !important;
+  align-self: start !important;
+}
+
+.entry-title {
+  font-size: 17px !important;
+  margin: 0 0 6px !important;
+}
+
+.entry-description {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+.catalog {
+  gap: 9px !important;
+}
+
+@media (max-width: 350px) {
+  .entry {
+    grid-template-columns: 95px minmax(0, 1fr) !important;
+  }
+}
+
+/* Полноэкранный просмотр */
+#cardZoom {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 7, 15, 0.96);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 55px 15px 25px;
+}
+
+#cardZoom.open {
+  display: flex;
+}
+
+#cardZoom img {
+  max-width: 100%;
+  max-height: 80dvh;
+  object-fit: contain;
+}
+
+#cardZoom button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #49313b;
+  color: white;
+  border: 1px solid #d8ad70;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 26px;
+}
+</style>
+
+<script>
+(() => {
+  // Если просмотр уже есть, не создаём второй.
+  if (document.getElementById("lightbox")) return;
+
+  const zoom = document.createElement("div");
+  zoom.id = "cardZoom";
+
+  zoom.innerHTML = `
+    <button type="button" aria-label="Закрыть">×</button>
+    <img alt="Изображение карты">
+  `;
+
+  document.body.appendChild(zoom);
+
+  const bigImage = zoom.querySelector("img");
+
+  function closeZoom() {
+    zoom.classList.remove("open");
+    bigImage.removeAttribute("src");
+    document.body.style.overflow = "";
+  }
+
+  // Нажатие на маленькую картинку.
+  document.addEventListener("click", (event) => {
+    const card = event.target.closest(".entry-visual");
+    if (!card) return;
+
+    const image = card.querySelector("img");
+    if (!image) return;
+
+    bigImage.src = image.src;
+    bigImage.alt = image.alt;
+
+    zoom.classList.add("open");
+    document.body.style.overflow = "hidden";
+  });
+
+  // Закрытие увеличенной картинки.
+  zoom.querySelector("button").onclick = closeZoom;
+
+  zoom.addEventListener("click", (event) => {
+    if (event.target === zoom) closeZoom();
+  });
+})();
+</script>
